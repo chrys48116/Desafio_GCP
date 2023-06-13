@@ -1,16 +1,17 @@
 import pandas as pd
 from google.oauth2 import service_account
-from google.cloud import storage
+from google.cloud import storage, bigquery
+import os
 
 
 def func():
     # Configurações do projeto GCP
     project_id = 'teste-gcp-py-chrystian'
-    bucket_name = 'bucket-testetidados-leonel'
-    folder_name = 'DRE'
+    bucket_name = 'bucket-testetidados-chrystian'
+    folder_name = 'dre'
 
     # Carrega as credenciais do GCP a partir do arquivo JSON
-    credentials = service_account.Credentials.from_service_account_file('caminho/para/chave.json')
+    credentials = service_account.Credentials.from_service_account_file('Teste_GCP\\Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json')
 
     # Conecta-se ao serviço de armazenamento do GCP
     storage_client = storage.Client(project=project_id, credentials=credentials)
@@ -21,8 +22,12 @@ def func():
 
     # Loop para processar cada arquivo
     for blob in blobs:
+        print(blob)
+        print(blobs)
+        print(blob.name)
         # Faz o download do arquivo Excel sem baixar para a máquina local
         byte_content = blob.download_as_bytes()
+        print(byte_content)
         
         # Lê o arquivo Excel usando o pandas
         df = pd.read_excel(byte_content, engine='xlrd')
@@ -64,28 +69,55 @@ def func():
 
     print("Processamento concluído.")
 
-import pandas as pd
+def teste():
+    # query = """
+    # select * from `bucket-testetidados-chrystian.dre`
+    # """
+    # credentials = service_account.Credentials.from_service_account_file(filename='Teste_GCP\\Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json',
+    #                                                                     scopes=['https://www.googleapis.com/auth/cloud-platform'])
+    # pd.read_gbq(query=query, credentials=credentials)
+    # Configurações do projeto e do bucket
+    projeto_gcp = "teste-gcp-py-chrystian"
+    bucket_nome = "bucket-testetidados-chrystian"
+    credentials = service_account.Credentials.from_service_account_file('Teste_GCP\\Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json')
 
-# Ler o arquivo Excel
-df = pd.read_excel('data/DRE 01-2022.xlsx')
+    # Cria o cliente do Storage
+    cliente_storage = storage.Client(project=projeto_gcp, credentials=credentials)
 
-# Identificar as colunas a serem normalizadas
-colunas_a_normalizar = df.columns[(df.columns > 'Nome') & (df.columns < 'Total')]
+    # Obtém a referência para o bucket
+    bucket = cliente_storage.get_bucket(bucket_nome)
 
-# Copiar as colunas a serem normalizadas e adicionar uma coluna de índice
-df_normalizado = df[colunas_a_normalizar].copy()
-df_normalizado.insert(0, 'Index', df.index)
 
-# Normalizar as colunas selecionadas
-df_normalizado = df_normalizado.melt(id_vars='Index', var_name='Coluna', value_name='Valor')
+    # Lista os arquivos dentro do diretório "dre"
+    diretorio = "dre/"
+    blobs = bucket.list_blobs(prefix=diretorio)
 
-# Remover as linhas com valores ausentes
-df_normalizado = df_normalizado.dropna(subset=['Valor'])
 
-# Combinar os dados normalizados com o DataFrame original
-df_final = pd.concat([df[['Nome', 'Total']], df_normalizado], axis=1)
-df_final.to_excel('results/teste2.xlsx')
+    # Configurações do BigQuery
+    projeto_bigquery = "teste-gcp-py-chrystian"
+    conjunto_dados = "dw_chrystian"
+    tabela_destino = "nome_tabela_destino"
 
-# Exibir o resultado
-print(df_final)
+    # Cria o cliente do BigQuery
+    cliente_bigquery = bigquery.Client(project=projeto_bigquery, credentials=credentials)
 
+    # Loop para ler os arquivos Excel e carregar no BigQuery
+    for blob in blobs:
+        print(blob.name)
+        print(blob)
+        # Verifica se o arquivo é um Excel (.xlsx)
+        if blob.name.endswith(".xlsx"):
+            # Lê o arquivo Excel sem baixar para a máquina local
+            blob_byte_range = blob.download_as_bytes(start=0, end=1024)  # Define a quantidade de bytes a serem lidos (1024 neste exemplo)
+            df = pd.read_excel(blob_byte_range)
+            
+            # Carrega o DataFrame no BigQuery
+            tabela_ref = f"{projeto_bigquery}.{conjunto_dados}.{tabela_destino}"
+            job_config = bigquery.LoadJobConfig(destination=tabela_ref, write_disposition="WRITE_APPEND")
+            job = cliente_bigquery.load_table_from_dataframe(df, tabela_ref, job_config=job_config)
+            job.result()  # Aguarda a conclusão do job
+            
+            print(f"Arquivo {blob.name} carregado no BigQuery com sucesso!")
+
+
+teste()

@@ -87,11 +87,9 @@ def teste():
     # Obtém a referência para o bucket
     bucket = cliente_storage.get_bucket(bucket_nome)
 
-
     # Lista os arquivos dentro do diretório "dre"
     diretorio = "dre/"
     blobs = bucket.list_blobs(prefix=diretorio)
-
 
     # Configurações do BigQuery
     projeto_bigquery = "teste-gcp-py-chrystian"

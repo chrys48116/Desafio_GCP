@@ -1,8 +1,6 @@
 import pandas as pd
 from google.oauth2 import service_account
-from google.cloud import storage, bigquery
-import os
-
+from google.cloud import storage
 
 def func():
     # Configurações do projeto GCP
@@ -70,16 +68,9 @@ def func():
     print("Processamento concluído.")
 
 def teste():
-    # query = """
-    # select * from `bucket-testetidados-chrystian.dre`
-    # """
-    # credentials = service_account.Credentials.from_service_account_file(filename='Teste_GCP\\Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json',
-    #                                                                     scopes=['https://www.googleapis.com/auth/cloud-platform'])
-    # pd.read_gbq(query=query, credentials=credentials)
-    # Configurações do projeto e do bucket
     projeto_gcp = "teste-gcp-py-chrystian"
     bucket_nome = "bucket-testetidados-chrystian"
-    credentials = service_account.Credentials.from_service_account_file('Teste_GCP\\Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json')
+    credentials = service_account.Credentials.from_service_account_file('Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json')
 
     # Cria o cliente do Storage
     cliente_storage = storage.Client(project=projeto_gcp, credentials=credentials)
@@ -91,31 +82,129 @@ def teste():
     diretorio = "dre/"
     blobs = bucket.list_blobs(prefix=diretorio)
 
-    # Configurações do BigQuery
-    projeto_bigquery = "teste-gcp-py-chrystian"
-    conjunto_dados = "dw_chrystian"
-    tabela_destino = "nome_tabela_destino"
-
-    # Cria o cliente do BigQuery
-    cliente_bigquery = bigquery.Client(project=projeto_bigquery, credentials=credentials)
-
     # Loop para ler os arquivos Excel e carregar no BigQuery
     for blob in blobs:
         print(blob.name)
-        print(blob)
         # Verifica se o arquivo é um Excel (.xlsx)
         if blob.name.endswith(".xlsx"):
             # Lê o arquivo Excel sem baixar para a máquina local
+            file_name = blob.name.split('/')[1]
+            download = blob.download_to_filename('results\\' +file_name+ '.xlsx')
+
             blob_byte_range = blob.download_as_bytes(start=0, end=1024)  # Define a quantidade de bytes a serem lidos (1024 neste exemplo)
             df = pd.read_excel(blob_byte_range)
+
+            
             
             # Carrega o DataFrame no BigQuery
-            tabela_ref = f"{projeto_bigquery}.{conjunto_dados}.{tabela_destino}"
-            job_config = bigquery.LoadJobConfig(destination=tabela_ref, write_disposition="WRITE_APPEND")
-            job = cliente_bigquery.load_table_from_dataframe(df, tabela_ref, job_config=job_config)
-            job.result()  # Aguarda a conclusão do job
+            # tabela_ref = f"{projeto_bigquery}.{conjunto_dados}.{tabela_destino}"
+            # job_config = bigquery.LoadJobConfig(destination=tabela_ref, write_disposition="WRITE_APPEND")
+            # job = cliente_bigquery.load_table_from_dataframe(df, tabela_ref, job_config=job_config)
+            # job.result()  # Aguarda a conclusão do job
             
             print(f"Arquivo {blob.name} carregado no BigQuery com sucesso!")
 
+def read_excel(directory):
+    # Lista os arquivos no diretório
+    files = os.listdir(directory)
 
-teste()
+    # Loop para ler os arquivos Excel
+    for file in files:
+        print(f'Arquivos encontrados: {files}')
+        if file.endswith('.xlsx'):
+            # Caminho completo do arquivo
+            file_path = os.path.join(directory, file)
+
+            # Lê o arquivo Excel com pandas
+            df = pd.read_excel(file_path)
+
+            # Normaliza as colunas
+            df_normalized = pd.melt(df, id_vars=['Nome', 'Total'], 
+                                        var_name='Mes e Unidade', 
+                                        value_name='Valor')
+            
+            # Extrai o mês e a loja e cria a coluna DataRef e Unidade
+            df_normalized['Unidade'] = df_normalized['Mes e Unidade'].str.split('(').str[1]
+            df_normalized['Unidade'] = df_normalized['Unidade'].str.replace(')', '')
+            df_normalized['DataRef'] = df_normalized['Mes e Unidade'].str.split('(').str[0]
+            df_normalized['DataRef'] = pd.to_datetime(df_normalized['DataRef'], format='%m/%Y')
+            df_normalized['DataRef'] = df_normalized['DataRef'] + pd.DateOffset(days=1)
+            df_normalized['DataRef'] = pd.to_datetime(df_normalized['DataRef'], format='%d/%m/%Y').dt.strftime('%m/%d/%Y')
+
+
+            # Cria a coluna Id da Conta e trata ela
+            df_normalized['IdConta'] = df_normalized['Nome'].str.split('-').str[0]
+            df_normalized['IdConta'] = df_normalized['IdConta'].str.strip()
+            df_normalized['IdConta'] = pd.to_numeric(df_normalized['IdConta']) if len(df_normalized['IdConta'])==1 else df_normalized['IdConta']
+            
+
+            # Identifica grupos, subgrupos e contas e os trata
+            df_normalized['Tipo'] = ''
+
+            for index, row in df_normalized.iterrows():
+                id_conta = row['IdConta']
+                tipo = ''
+                
+                if '.' not in id_conta:
+                    tipo = 'Grupo'
+                elif id_conta + '.' not in df_normalized['IdConta'].iloc[index+1:]:
+                    tipo = 'Conta'
+                else:
+                    tipo = 'Subgrupo'
+                
+                df_normalized.at[index, 'Tipo'] = tipo
+
+            df_normalized['Grupo'] = np.where(df_normalized['Tipo'] == 'Grupo', True, False)
+            df_normalized['Subgrupo'] = np.where(df_normalized['Tipo'] == 'Subgrupo', True, False)
+            df_normalized['Conta'] = np.where(df_normalized['Tipo'] != 'Grupo', np.where(df_normalized['Tipo'] != 'Subgrupo', True, False), False)
+
+            # Aplica trim no nome
+            df_normalized['Nome'] = df_normalized['Nome'].str.strip()
+
+            # Remove colunas em excesso
+            final_df = df_normalized[['Nome', 'Valor', 'DataRef', 'Unidade', 'IdConta', 'Conta', 'Grupo', 'Subgrupo', 'Tipo']]
+
+
+            # Exemplo: imprime as primeiras linhas do dataframe
+            final_df.to_excel(f'results/dados normalizados{file}.xlsx', index=False)
+            print(final_df.head())
+
+
+# Diretório onde os arquivos Excel estão localizados
+#directory = 'data'
+
+# Executa a função para ler os arquivos Excel
+#read_excel(directory)
+
+def connection():
+    # Substitua o caminho pelo caminho para o seu arquivo JSON de chave de serviço
+    path_to_keyfile = 'Teste_GCP\\Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json'
+
+    # Crie um objeto cliente de armazenamento com base no arquivo de chave
+    client = storage.Client.from_service_account_json(path_to_keyfile)
+
+    # Listar os baldes existentes
+    buckets = client.list_buckets()
+
+    for bucket in buckets:
+        print(bucket.name)
+        if bucket.name == 'bucket-testetidados-chrystian':
+            bucket_name = 'bucket-testetidados-chrystian'
+            bucket = client.get_bucket(bucket_name)
+            folder = 'dre/'
+
+            blob = bucket.blob(folder)
+            
+    #blob.download_to_file('Teste_GCP\\data\\')
+    # blob.upload_from_filename(file)
+
+            blobs = bucket.list_blobs(delimiter='/', prefix=folder)
+            for blob in blobs:
+                print(blob.name)
+                print(blob.size)
+                if blob.size > 0:
+                    blob.download_to_filename(blob.name)
+                    print(blob.name)
+                print(blob.public_url)
+                print(blob.content_type)
+#connection()

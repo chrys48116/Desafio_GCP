@@ -1,38 +1,21 @@
-from google.oauth2 import service_account
-from google.cloud import storage, bigquery
+import os
 import pandas as pd
+import numpy as np
+from google.oauth2 import service_account
+from google.cloud import storage
 
-def connection():
-    key_path = 'Arquivos de Apoio\\teste-gcp-py-chrystian-f4cffb90d1ae.json'
-    credentials = service_account.Credentials.from_service_account_file(key_path)
-    storage_client = storage.Client(credentials=credentials)
-    bigquery_client = bigquery.Client(credentials=credentials)
-    # Conecte-se ao serviço do Cloud Storage
-    bucket_name = 'bucket-testetidados-chrystian'
-    folder = 'dre/'
-    bucket = storage_client.get_bucket(bucket_name)
+project_name = "teste-gcp-py-chrystian"
+bucket_name = "bucket-testetidados-chrystian_formove"
+file_key = 'data\\teste-gcp-py-chrystian-f4cffb90d1ae.json'
 
-    read_files(bucket, folder)
+credentials = service_account.Credentials.from_service_account_file(file_key)
+# Cria uma instancia do client storage
+storage_client = storage.Client(credentials=credentials, project=project_name)
+# Pega o bucket desejado
+bucket = storage_client.get_bucket(bucket_name)
+# Lista os arquivos da pasta dre/
+folder = 'dre/'
+blobs = bucket.list_blobs(prefix=folder)
 
-def read_files(bucket, folder):
-    # Liste os arquivos dentro do bucket
-    blobs = bucket.list_blobs(prefix=folder)
-
-    # Itere sobre os blobs e imprima seus nomes
-    for blob in blobs:
-        # Verifica se é um arquivo Excel
-        if blob.name.endswith('.xlsx'):
-            # Obtém os bytes do blob
-            blob_bytes = blob.download_as_bytes()
-
-            # Lê o arquivo Excel diretamente a partir dos bytes
-            df = pd.read_excel(blob_bytes)
-
-            # Faz o processamento desejado com o dataframe
-            # ...
-
-            # Exemplo: imprime as primeiras linhas do dataframe
-            print(df.head())
-
-
-connection()
+for file in blobs:
+    print(file.name)

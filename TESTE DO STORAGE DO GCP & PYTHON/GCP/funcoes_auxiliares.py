@@ -44,9 +44,6 @@ def processing_data(df):
     # Remove colunas em excesso
     final_df = df_normalized[['Nome', 'Valor', 'DataRef', 'Unidade', 'IdConta', 'Conta', 'Grupo', 'Subgrupo', 'Tipo']]
     return final_df
-    # Exemplo: imprime as primeiras linhas do dataframe
-    # final_df.to_excel(f'results/dados normalizados{file}.xlsx', index=False)
-    # print(final_df.head())
 
 
 def upload_files(dataframe, filename):
@@ -93,3 +90,15 @@ def connection(project_name, bucket_name, file_key):
     blobs = bucket.list_blobs(prefix=folder)
 
     read_files(blobs)
+
+def init():
+    project_name = "teste-gcp-py-chrystian"
+    bucket_name = "bucket-testetidados-chrystian"
+    file_key = 'data\\teste-gcp-py-chrystian-f4cffb90d1ae.json'
+
+    try:
+        connection(project_name, bucket_name, file_key)
+        print('Processo finalizado!')
+
+    except Exception as e:
+        print(e)

@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "teste-gcp-py-chrystian",
+  "private_key_id": "f4cffb90d1aee7c73597e6aa41c976f072380a72",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEugIBADANBgkqhkiG9w0BAQEFAASCBKQwggSgAgEAAoIBAQCJTTn1TX3dOEK8\n+cu2z7TF9WEshT6x8hs4p3ghvt4xMHfRxA7hiP9eX3UdakTQI7v3NfeEFGvY3plO\nrkFuU23HTKsj3+iU2FlWFX2KDRVPObjARcDT/PCC644v3lMS6YDJZt312pKvscTS\noWdHNihq5h/JPr//muXYZPKNQ2C2/RM4nHJ928Kw7v9MG9ZpyGOYB9qSMU/3suZM\ns7bQHhdxTP0l2dCKXtx95ZNNfsjI2+aH76L7En4Fp/5Xlso++/KYNObcbdoR2/MK\nwchkBmBtZy7fEfyLNLoirWMnyIsxotiWh35iIdFGqIHAGTjUjLBgbG48dMze4WSQ\nAuwubo/nAgMBAAECgf9DTxiaqOKLEImnGs5DUI/Oe/ynVqrlkUrG+1JpOKi0dI5I\nx1SEPCT0ntdLFE2nu9zp1AsDNP+p0XZWnBZ3f27RxUQg0iOy1Fz3VpG0m7VWoXVw\nzME7K0S86b1KujL/knkQQt2NKRnAB+X1XCrFPkeSID506c42ADmtW8+McPt4uOBh\nMiSqfeFDgEkk5OJzzFGdKBzzrXx8wnRdKfM0ixnXBmJZdh4E3giCAXE2nqUcPT+D\nTLp/FEPlWXRpW5HmsDOY8IqQjlAnkvIbMdfPgUevU6R+mAfN2RcV/vBQBNIeqlBB\nfF8e/0YKrzgp2XF+j0P3qWdHwftgj6ERy1IHELUCgYEAvDzp2BLUCVR1IU9x0rgG\nF8s4V2aB8rO8S9umXRZj3rPRP/WFMapbVfV0jGg18M0hdiISoe/X2ABo+p/ySEWt\nno12h5AeL057FLP/kKm0MLko/UgzTUHfp/moK59fH82nbGDR8HNoddzXE7glOf7c\nVrc/Uk3kpiJmWCIVdeESF3MCgYEAurpGcecvaEQ9l1DzY+FSklqhJygIOTtNakDf\n1Wcgm+kVSjGqXJ7FNCyRxCdz+CbNFiFuXDuOxKtCYQSE7Y61IXuqtfuKDUQeXnsw\neP3yIQmy0Q/CE3JggXdg9aD5+eWKWP4F3knDxWfdIt3+/ydGxLKBAYg+BdLUyd5G\na3JPwL0CgYABkLwdGOL8hOBIe6Glr/QVBJKeX3LbMtVxCA2VHpeMBZDK6F7IL/N8\nfoMOm9s++mW51sSy5gy0diRpWSUpprKv69s9e1xU5mEtpeWNLWwbL58ApDYRAWg7\nvF7CphujZxFqXE/CoSMQP9rmBhUBK3ZnnjR/mbg6DXUubHIjPdDpswKBgBo1sVOl\nnqrlATwvGarIYt22KO6lGNpnr4sdhg2fRx17Twi2BfKwOoADTYaZ/xYy5BCaKrJ5\njaWfYFbb2oi5wkTr5d9balpIWHbslbY19vmaMeZUbupp4I/roMl5if0AsjWhmlNE\nSV15IboWLQfFjJJpd+AuLn6ExGd9cqb8SaOFAoGAC8o1ZgVQPzP+o11xf4pCofHu\nQ+yk8OOl2h9RL9L5QLO9mR84T9NRtyzxC83m69UcggE0a7YCXhyUAbuXDkxQhh56\niZWYQQXtUHQ3OAbMaJNqjPVJhkQDVFx88cI0CZCrgt3I7nzfj/Ie1lmsSgWzJEIp\nVGeCTUJX1xnorahBDgs=\n-----END PRIVATE KEY-----\n",
+  "client_email": "teste-gcp-py-chrystian@teste-gcp-py-chrystian.iam.gserviceaccount.com",
+  "client_id": "108789185818237210354",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/teste-gcp-py-chrystian%40teste-gcp-py-chrystian.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

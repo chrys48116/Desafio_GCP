@@ -1,8 +1,13 @@
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 from datetime import datetime
+from google.oauth2 import service_account
+import pandas as pd
+import io
 
 # Configurar o cliente do BigQuery
-client = bigquery.Client()
+file_key = 'Teste_GCP\\TESTE DO BIGQUERY & PYTHON\\data\\teste-gcp-py-chrystian-f4cffb90d1ae.json'
+credentials = service_account.Credentials.from_service_account_file(file_key)
+client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
 # Nome do conjunto de dados
 dataset_name = 'dw_chrystian'
@@ -11,6 +16,8 @@ dataset_name = 'dw_chrystian'
 def create_dimension_table(table_name, schema):
     table_id = f'{client.project}.{dataset_name}.{table_name}'
     table = bigquery.Table(table_id, schema=schema)
+    #print(table)
+    #table = client.delete_table(table, not_found_ok=True)
     table = client.create_table(table)
     print(f'Tabela {table.table_id} criada com sucesso.')
 
@@ -18,15 +25,17 @@ def create_dimension_table(table_name, schema):
 def create_fact_table(table_name, schema):
     table_id = f'{client.project}.{dataset_name}.{table_name}'
     table = bigquery.Table(table_id, schema=schema)
+    #table = client.delete_table(table, not_found_ok=True)
     table = client.create_table(table)
     print(f'Tabela {table.table_id} criada com sucesso.')
 
 # Função para obter o ID incremental de uma dimensão
 def get_dimension_id(dimension_name, value):
     # Consulta o BigQuery para obter o próximo ID disponível
+    table_id = f'{client.project}.{dataset_name}.{dimension_name}'
     query = f"""
         SELECT MAX(Id) as MaxId
-        FROM `{client.project}.{dataset_name}.{dimension_name}`
+        FROM `{table_id}`
     """
     query_job = client.query(query)
     results = query_job.result()
@@ -78,6 +87,7 @@ unidade_schema = [
 ]
 
 calendario_schema = [
+    bigquery.SchemaField('Id', 'INT64', mode='REQUIRED'),
     bigquery.SchemaField('DataRef', 'DATE', mode='REQUIRED'),
     bigquery.SchemaField('DiaDaSemana', 'STRING', mode='REQUIRED'),
     bigquery.SchemaField('Mes', 'STRING', mode='REQUIRED'),
@@ -97,23 +107,37 @@ fato_schema = [
     bigquery.SchemaField('Valor', 'FLOAT64', mode='REQUIRED')
 ]
 
-# Criar tabelas de dimensões
-create_dimension_table('conta', conta_schema)
-create_dimension_table('unidade', unidade_schema)
-create_dimension_table('calendario', calendario_schema)
-create_dimension_table('tipo', tipo_schema)
+
+try:
+    # Criar tabelas de dimensões
+    create_dimension_table('conta', conta_schema)
+    create_dimension_table('unidade', unidade_schema)
+    create_dimension_table('calendario', calendario_schema)
+    create_dimension_table('tipo', tipo_schema)
 
 # Criar tabela de fatos
-create_fact_table('fato', fato_schema)
+    create_fact_table('fato', fato_schema)
+except Exception as e:
+    print(e)
 
 # Ler os arquivos CSV e inserir os registros nas tabelas correspondentes
+file_key = 'Teste_GCP\\TESTE DO BIGQUERY & PYTHON\\data\\teste-gcp-py-chrystian-f4cffb90d1ae.json'
+credentials = service_account.Credentials.from_service_account_file(file_key)
+storage_client = storage.Client(credentials=credentials, project=credentials.project_id)
 bucket_name = 'bucket-testetidados-chrystian_formove'
-blobs = storage_client.get_bucket(bucket_name).list_blobs(prefix='DRE/')
+bucket = storage_client.get_bucket(bucket_name)
+blobs = bucket.list_blobs(prefix='dre/')
 
 for blob in blobs:
     if blob.name.endswith('.csv'):
         print("Lendo arquivo:", blob.name)
-        df = pd.read_csv(f'gs://{bucket_name}/{blob.name}')
+        filename = blob.name.split('/')[1]
+        try:
+            download = blob.download_as_bytes()
+            df = pd.read_csv(io.BytesIO(download))
+            print(df.head())
+        except Exception as e:
+            print(e)
         
         # Inserir registros nas dimensões
         for _, row in df.iterrows():
